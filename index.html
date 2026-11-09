@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Найди ошибку — Числовая закономерность</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+  html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif; }
+
+  body {
+    background: linear-gradient(180deg, #1a2a4a 0%, #2d4a7a 40%, #4a6fa5 70%, #6b8fc4 100%);
+    position: relative;
+  }
+
+  /* Сцена */
+  .scene {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .skyline {
+    position: absolute;
+    bottom: 30%;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    opacity: 0.55;
+    z-index: 1;
+  }
+
+  .forest {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 45%;
+    z-index: 2;
+  }
+
+  .snow-ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 25%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(220,235,250,0.98) 50%, rgba(200,220,240,1) 100%);
+    border-top: 4px solid rgba(255,255,255,0.8);
+    z-index: 3;
+  }
+
+  /* Снежинки */
+  .snowflakes {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .snowflake {
+    position: absolute;
+    color: #fff;
+    font-size: 14px;
+    opacity: 0.8;
+    animation: fall linear infinite;
+    text-shadow: 0 0 3px rgba(255,255,255,0.5);
+  }
+  @keyframes fall {
+    0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+    100% { transform: translateY(110vh) translateX(30px) rotate(360deg); }
+  }
+
+  /* Филин */
+  .owl {
+    position: absolute;
+    bottom: 15%;
+    right: 5%;
+    width: 180px;
+    height: 260px;
+    z-index: 10;
+    animation: owlBob 3s ease-in-out infinite;
+  }
+  @keyframes owlBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  /* Игровой интерфейс */
+  .game-ui {
+    position: relative;
+    z-index: 20;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .header {
+    text-align: center;
+    color: #fff;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-size: clamp(22px, 3.5vw, 36px);
+    margin-bottom: 8px;
+    color: #ffe066;
+  }
+  .header p {
+    font-size: clamp(14px, 2vw, 20px);
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.4;
+  }
+
+  .task-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .task-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    border: 2px solid #fff;
+    transition: all 0.3s;
+  }
+  .task-dot.active {
+    background: #ffe066;
+    transform: scale(1.3);
+  }
+  .task-dot.done {
+    background: #66ff99;
+  }
+
+  /* Область последовательности */
+  .sequence-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .sequence {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .number-cell {
+    width: clamp(60px, 10vw, 100px);
+    height: clamp(60px, 10vw, 100px);
+    background: linear-gradient(135deg, #fff 0%, #e0e8f0 100%);
+    border: 4px solid #4a6fa5;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(24px, 4vw, 42px);
+    font-weight: bold;
+    color: #1a2a4a;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.8);
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .number-cell.success {
+    border-color: #22cc66;
+    background: linear-gradient(135deg, #d0ffd8 0%, #88ee99 100%);
+    color: #065;
+    animation: successPop 0.6s ease-out;
+    box-shadow: 0 0 25px rgba(34,204,102,0.8), 0 6px 12px rgba(0,0,0,0.3);
+  }
+  @keyframes successPop {
+    0% { transform: scale(0.5); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .arrow {
+    font-size: clamp(20px, 3vw, 32px);
+    color: #ffe066;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+
+  /* Банк ответов */
+  .bank-area {
+    padding: 15px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    margin: 10px 20px 20px;
+  }
+  .bank-label {
+    text-align: center;
+    color: #fff;
+    font-size: clamp(14px, 2vw, 20px);
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    font-weight: bold;
+  }
+  .bank {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    min-height: 80px;
+  }
+
+  .bank-number {
+    width: clamp(60px, 10vw, 90px);
+    height: clamp(60px, 10vw, 90px);
+    background: linear-gradient(135deg, #ffe066 0%, #ffaa00 100%);
+    border: 4px solid #cc8800;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(24px, 4vw, 38px);
+    font-weight: bold;
+    color: #4a2800;
+    cursor: grab;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+    touch-action: none;
+  }
+  .bank-number:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 16px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.5);
+  }
+  .bank-number.dragging {
+    cursor: grabbing;
+    opacity: 0.7;
+    transform: scale(1.15);
+    z-index: 1000;
+    box-shadow: 0 15px 25px rgba(0,0,0,0.6);
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-8px); }
+    80% { transform: translateX(8px); }
+  }
+  .shake { animation: shake 0.5s ease-in-out; }
+
+  /* Сообщение */
+  .message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: linear-gradient(135deg, #66ff99 0%, #22cc66 100%);
+    color: #fff;
+    padding: 30px 60px;
+    border-radius: 24px;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: bold;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 5px solid #fff;
+    z-index: 100;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: none;
+  }
+  .message.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+
+  /* Кнопка далее */
+  .next-btn {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    padding: 15px 35px;
+    background: linear-gradient(135deg, #66ff99 0%, #22cc66 100%);
+    border: 4px solid #fff;
+    border-radius: 50px;
+    color: #fff;
+    font-size: clamp(16px, 2.5vw, 22px);
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s;
+    z-index: 50;
+    font-family: inherit;
+  }
+  .next-btn.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .next-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  }
+
+  /* Финальный экран */
+  .final-screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(26, 42, 74, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+  }
+  .final-screen.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .final-screen h2 {
+    color: #ffe066;
+    font-size: clamp(32px, 6vw, 64px);
+    text-shadow: 3px 3px 8px rgba(0,0,0,0.6);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .final-screen p {
+    color: #fff;
+    font-size: clamp(18px, 3vw, 28px);
+    margin-bottom: 40px;
+    text-align: center;
+    padding: 0 20px;
+  }
+  .restart-btn {
+    padding: 18px 45px;
+    background: linear-gradient(135deg, #ffe066 0%, #ffaa00 100%);
+    border: 4px solid #fff;
+    border-radius: 50px;
+    color: #4a2800;
+    font-size: clamp(18px, 3vw, 26px);
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    font-family: inherit;
+    transition: transform 0.2s;
+  }
+  .restart-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+  }
+</style>
+</head>
+<body>
+
+<!-- Сцена -->
+<div class="scene">
+  <!-- Небоскребы на заднем плане -->
+  <svg class="skyline" viewBox="0 0 1200 400" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="buildingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#2a3a5a"/>
+        <stop offset="100%" stop-color="#1a2540"/>
+      </linearGradient>
+    </defs>
+    <!-- Здания -->
+    <rect x="50" y="150" width="80" height="250" fill="url(#buildingGrad)"/>
+    <rect x="140" y="100" width="100" height="300" fill="url(#buildingGrad)"/>
+    <rect x="250" y="180" width="70" height="220" fill="url(#buildingGrad)"/>
+    <rect x="330" y="80" width="120" height="320" fill="url(#buildingGrad)"/>
+    <rect x="460" y="140" width="90" height="260" fill="url(#buildingGrad)"/>
+    <rect x="560" y="60" width="110" height="340" fill="url(#buildingGrad)"/>
+    <rect x="680" y="120" width="80" height="280" fill="url(#buildingGrad)"/>
+    <rect x="770" y="90" width="100" height="310" fill="url(#buildingGrad)"/>
+    <rect x="880" y="160" width="75" height="240" fill="url(#buildingGrad)"/>
+    <rect x="965" y="110" width="95" height="290" fill="url(#buildingGrad)"/>
+    <rect x="1070" y="140" width="80" height="260" fill="url(#buildingGrad)"/>
+    <!-- Окна -->
+    <g fill="#ffe066" opacity="0.6">
+      <rect x="65" y="170" width="8" height="12"/>
+      <rect x="85" y="170" width="8" height="12"/>
+      <rect x="105" y="170" width="8" height="12"/>
+      <rect x="65" y="200" width="8" height="12"/>
+      <rect x="105" y="200" width="8" height="12"/>
+      <rect x="65" y="230" width="8" height="12"/>
+      <rect x="85" y="230" width="8" height="12"/>
+      <rect x="160" y="120" width="10" height="14"/>
+      <rect x="185" y="120" width="10" height="14"/>
+      <rect x="210" y="120" width="10" height="14"/>
+      <rect x="160" y="150" width="10" height="14"/>
+      <rect x="210" y="150" width="10" height="14"/>
+      <rect x="160" y="180" width="10" height="14"/>
+      <rect x="185" y="180" width="10" height="14"/>
+      <rect x="350" y="100" width="10" height="14"/>
+      <rect x="375" y="100" width="10" height="14"/>
+      <rect x="400" y="100" width="10" height="14"/>
+      <rect x="425" y="100" width="10" height="14"/>
+      <rect x="350" y="130" width="10" height="14"/>
+      <rect x="400" y="130" width="10" height="14"/>
+      <rect x="350" y="160" width="10" height="14"/>
+      <rect x="375" y="160" width="10" height="14"/>
+      <rect x="425" y="160" width="10" height="14"/>
+      <rect x="580" y="80" width="10" height="14"/>
+      <rect x="605" y="80" width="10" height="14"/>
+      <rect x="630" y="80" width="10" height="14"/>
+      <rect x="655" y="80" width="10" height="14"/>
+      <rect x="580" y="110" width="10" height="14"/>
+      <rect x="630" y="110" width="10" height="14"/>
+      <rect x="580" y="140" width="10" height="14"/>
+      <rect x="605" y="140" width="10" height="14"/>
+      <rect x="655" y="140" width="10" height="14"/>
+      <rect x="790" y="110" width="10" height="14"/>
+      <rect x="815" y="110" width="10" height="14"/>
+      <rect x="840" y="110" width="10" height="14"/>
+      <rect x="790" y="140" width="10" height="14"/>
+      <rect x="840" y="140" width="10" height="14"/>
+      <rect x="985" y="130" width="10" height="14"/>
+      <rect x="1010" y="130" width="10" height="14"/>
+      <rect x="1035" y="130" width="10" height="14"/>
+      <rect x="985" y="160" width="10" height="14"/>
+      <rect x="1035" y="160" width="10" height="14"/>
+    </g>
+  </svg>
+
+  <!-- Зимний лес с елями -->
+  <svg class="forest" viewBox="0 0 1200 450" preserveAspectRatio="none">
+    <!-- Задний ряд елей (меньше, темнее) -->
+    <g opacity="0.7">
+      <polygon points="100,450 50,250 150,250" fill="#1a4a2a"/>
+      <polygon points="100,350 60,200 140,200" fill="#1a4a2a"/>
+      <polygon points="100,280 70,150 130,150" fill="#1a4a2a"/>
+      <polygon points="100,200 80,100 120,100" fill="#1a4a2a"/>
+      <polygon points="100,250 60,250 100,230 140,250" fill="#fff" opacity="0.9"/>
+      <polygon points="100,200 70,200 100,185 130,200" fill="#fff" opacity="0.9"/>
+
+      <polygon points="300,450 250,250 350,250" fill="#1a4a2a"/>
+      <polygon points="300,350 260,200 340,200" fill="#1a4a2a"/>
+      <polygon points="300,280 270,150 330,150" fill="#1a4a2a"/>
+      <polygon points="300,250 260,250 300,230 340,250" fill="#fff" opacity="0.9"/>
+
+      <polygon points="500,450 450,250 550,250" fill="#1a4a2a"/>
+      <polygon points="500,350 460,200 540,200" fill="#1a4a2a"/>
+      <polygon points="500,280 470,150 530,150" fill="#1a4a2a"/>
+      <polygon points="500,250 460,250 500,230 540,250" fill="#fff" opacity="0.9"/>
+
+      <polygon points="700,450 650,250 750,250" fill="#1a4a2a"/>
+      <polygon points="700,350 660,200 740,200" fill="#1a4a2a"/>
+      <polygon points="700,280 670,150 730,150" fill="#1a4a2a"/>
+      <polygon points="700,250 660,250 700,230 740,250" fill="#fff" opacity="0.9"/>
+
+      <polygon points="900,450 850,250 950,250" fill="#1a4a2a"/>
+      <polygon points="900,350 860,200 940,200" fill="#1a4a2a"/>
+      <polygon points="900,280 870,150 930,150" fill="#1a4a2a"/>
+      <polygon points="900,250 860,250 900,230 940,250" fill="#fff" opacity="0.9"/>
+
+      <polygon points="1100,450 1050,250 1150,250" fill="#1a4a2a"/>
+      <polygon points="1100,350 1060,200 1140,200" fill="#1a4a2a"/>
+      <polygon points="1100,280 1070,150 1130,150" fill="#1a4a2a"/>
+      <polygon points="1100,250 1060,250 1100,230 1140,250" fill="#fff" opacity="0.9"/>
+    </g>
+
+    <!-- Передний ряд елей (крупнее, ярче) -->
+    <g>
+      <polygon points="200,450 130,220 270,220" fill="#2d6b3f"/>
+      <polygon points="200,340 140,170 260,170" fill="#2d6b3f"/>
+      <polygon points="200,260 150,120 250,120" fill="#2d6b3f"/>
+      <polygon points="200,180 160,70 240,70" fill="#2d6b3f"/>
+      <polygon points="200,220 140,220 200,195 260,220" fill="#fff" opacity="0.95"/>
+      <polygon points="200,170 150,170 200,150 250,170" fill="#fff" opacity="0.95"/>
+      <polygon points="200,120 160,120 200,105 240,120" fill="#fff" opacity="0.95"/>
+
+      <polygon points="400,450 330,220 470,220" fill="#2d6b3f"/>
+      <polygon points="400,340 340,170 460,170" fill="#2d6b3f"/>
+      <polygon points="400,260 350,120 450,120" fill="#2d6b3f"/>
+      <polygon points="400,180 360,70 440,70" fill="#2d6b3f"/>
+      <polygon points="400,220 340,220 400,195 460,220" fill="#fff" opacity="0.95"/>
+      <polygon points="400,170 350,170 400,150 450,170" fill="#fff" opacity="0.95"/>
+      <polygon points="400,120 360,120 400,105 440,120" fill="#fff" opacity="0.95"/>
+
+      <polygon points="600,450 530,220 670,220" fill="#2d6b3f"/>
+      <polygon points="600,340 540,170 660,170" fill="#2d6b3f"/>
+      <polygon points="600,260 550,120 650,120" fill="#2d6b3f"/>
+      <polygon points="600,180 560,70 640,70" fill="#2d6b3f"/>
+      <polygon points="600,220 540,220 600,195 660,220" fill="#fff" opacity="0.95"/>
+      <polygon points="600,170 550,170 600,150 650,170" fill="#fff" opacity="0.95"/>
+      <polygon points="600,120 560,120 600,105 640,120" fill="#fff" opacity="0.95"/>
+
+      <polygon points="800,450 730,220 870,220" fill="#2d6b3f"/>
+      <polygon points="800,340 740,170 860,170" fill="#2d6b3f"/>
+      <polygon points="800,260 750,120 850,120" fill="#2d6b3f"/>
+      <polygon points="800,180 760,70 840,70" fill="#2d6b3f"/>
+      <polygon points="800,220 740,220 800,195 860,220" fill="#fff" opacity="0.95"/>
+      <polygon points="800,170 750,170 800,150 850,170" fill="#fff" opacity="0.95"/>
+      <polygon points="800,120 760,120 800,105 840,120" fill="#fff" opacity="0.95"/>
+
+      <polygon points="1000,450 930,220 1070,220" fill="#2d6b3f"/>
+      <polygon points="1000,340 940,170 1060,170" fill="#2d6b3f"/>
+      <polygon points="1000,260 950,120 1050,120" fill="#2d6b3f"/>
+      <polygon points="1000,180 960,70 1040,70" fill="#2d6b3f"/>
+      <polygon points="1000,220 940,220 1000,195 1060,220" fill="#fff" opacity="0.95"/>
+      <polygon points="1000,170 950,170 1000,150 1050,170" fill="#fff" opacity="0.95"/>
+      <polygon points="1000,120 960,120 1000,105 1040,120" fill="#fff" opacity="0.95"/>
+    </g>
+  </svg>
+
+  <!-- Снежная земля -->
+  <div class="snow-ground"></div>
+
+  <!-- Снежинки -->
+  <div class="snowflakes" id="snowflakes"></div>
+</div>
+
+<!-- Филин с глазами и клювом -->
+<svg class="owl" viewBox="0 0 180 260">
+  <defs>
+    <radialGradient id="irisGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffdd44"/>
+      <stop offset="60%" stop-color="#ffaa00"/>
+      <stop offset="100%" stop-color="#cc6600"/>
+    </radialGradient>
+  </defs>
+  <!-- Тело -->
+  <ellipse cx="90" cy="160" rx="65" ry="85" fill="#8B5A2B"/>
+  <ellipse cx="90" cy="170" rx="50" ry="65" fill="#D4A574"/>
+  <!-- Крылья -->
+  <ellipse cx="40" cy="160" rx="25" ry="60" fill="#6B4423"/>
+  <!-- Правое крыло указывает на последовательность (влево) -->
+  <g transform="translate(140, 140) rotate(-30)">
+    <ellipse cx="0" cy="0" rx="20" ry="55" fill="#6B4423"/>
+    <ellipse cx="-5" cy="-45" rx="8" ry="15" fill="#8B5A2B"/>
+  </g>
+  <!-- Голова -->
+  <circle cx="90" cy="75" r="50" fill="#8B5A2B"/>
+  <!-- Ушки-перья -->
+  <polygon points="55,45 45,15 70,40" fill="#6B4423"/>
+  <polygon points="125,45 135,15 110,40" fill="#6B4423"/>
+
+  <!-- ГЛАЗА -->
+  <!-- Левый глаз -->
+  <g>
+    <circle cx="70" cy="72" r="18" fill="#ffffff" stroke="#3a2810" stroke-width="2"/>
+    <circle cx="70" cy="72" r="13" fill="url(#irisGrad)"/>
+    <circle cx="70" cy="72" r="7" fill="#1a1a1a"/>
+    <circle cx="73" cy="68" r="3" fill="#ffffff"/>
+    <circle cx="67" cy="75" r="1.5" fill="#ffffff" opacity="0.7"/>
+  </g>
+  <!-- Правый глаз -->
+  <g>
+    <circle cx="110" cy="72" r="18" fill="#ffffff" stroke="#3a2810" stroke-width="2"/>
+    <circle cx="110" cy="72" r="13" fill="url(#irisGrad)"/>
+    <circle cx="110" cy="72" r="7" fill="#1a1a1a"/>
+    <circle cx="113" cy="68" r="3" fill="#ffffff"/>
+    <circle cx="107" cy="75" r="1.5" fill="#ffffff" opacity="0.7"/>
+  </g>
+
+  <!-- КЛЮВ -->
+  <g>
+    <!-- Основная форма клюва — треугольник, направленный вниз -->
+    <path d="M 90 88 L 78 102 Q 90 118 102 102 Z" fill="#ffaa00" stroke="#8B4513" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- Блик на клюве для объёма -->
+    <path d="M 90 92 L 84 100 Q 90 108 96 100 Z" fill="#ffcc44" opacity="0.6"/>
+    <!-- Линия разделения верхней и нижней части клюва -->
+    <path d="M 80 102 Q 90 106 100 102" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.7"/>
+  </g>
+
+  <!-- Лапы -->
+  <ellipse cx="70" cy="240" rx="15" ry="10" fill="#FFB84D"/>
+  <ellipse cx="110" cy="240" rx="15" ry="10" fill="#FFB84D"/>
+</svg>
+
+<!-- Игровой интерфейс -->
+<div class="game-ui">
+  <div class="header">
+    <h1>🔍 Найди ошибку!</h1>
+    <p id="taskText">Найди закономерность в числовой последовательности. Одно число нарушает правило. Перетащи правильное число из банка внизу и поставь его на место ошибочного.</p>
+    <div class="task-indicator">
+      <div class="task-dot active" id="dot1"></div>
+      <div class="task-dot" id="dot2"></div>
+      <div class="task-dot" id="dot3"></div>
+    </div>
+  </div>
+
+  <div class="sequence-area">
+    <div class="sequence" id="sequence"></div>
+  </div>
+
+  <div class="bank-area">
+    <div class="bank-label">📦 Банк ответов — перетащи нужное число</div>
+    <div class="bank" id="bank"></div>
+  </div>
+</div>
+
+<!-- Сообщение об успехе -->
+<div class="message" id="message">Молодец!</div>
+
+<!-- Кнопка далее -->
+<button class="next-btn" id="nextBtn">Следующее задание →</button>
+
+<!-- Финальный экран -->
+<div class="final-screen" id="finalScreen">
+  <h2>🎉 Поздравляем! 🎉</h2>
+  <p>Ты отлично справился со всеми заданиями!<br>Ты настоящий математик!</p>
+  <button class="restart-btn" onclick="restartGame()">Играть снова</button>
+</div>
+
+<script>
+  // Данные заданий
+  const tasks = [
+    {
+      sequence: [4, 8, 16, 32, 60, 128],
+      errorIndex: 4,
+      correct: 64,
+      bank: [64, 62, 58, 66],
+      message: 'Молодец!'
+    },
+    {
+      sequence: [3, 6, 12, 24, 48, 94],
+      errorIndex: 5,
+      correct: 96,
+      bank: [96, 92, 98, 90],
+      message: 'Отлично!'
+    },
+    {
+      sequence: [5, 10, 20, 38, 80, 160],
+      errorIndex: 3,
+      correct: 40,
+      bank: [40, 36, 42, 39],
+      message: 'Правильно!'
+    }
+  ];
+
+  const taskTexts = [
+    'Найди закономерность в числовой последовательности. Одно число нарушает правило. Перетащи правильное число из банка внизу и поставь его на место ошибочного.',
+    'Посмотри на числовую последовательность. Найди правило и определи, какое число стоит неправильно. Исправь ошибку, перетащив верное число из банка.',
+    'В этой числовой последовательности спряталась ошибка. Найди закономерность и замени неправильное число на верное из банка ответов.'
+  ];
+
+  let currentTask = 0;
+
+  // Звуки через Web Audio API
+  let audioCtx = null;
+  function initAudio() {
+    if (!audioCtx) {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch(e) {}
+    }
+  }
+
+  function playSound(type) {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'grab') {
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.1);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } else if (type === 'success') {
+      osc.frequency.setValueAtTime(523, now);
+      osc.frequency.setValueAtTime(659, now + 0.1);
+      osc.frequency.setValueAtTime(784, now + 0.2);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } else if (type === 'error') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    }
+  }
+
+  // Создание снежинок
+  function createSnowflakes() {
+    const container = document.getElementById('snowflakes');
+    const flakes = ['❄', '❅', '❆', '✦', '•'];
+    for (let i = 0; i < 50; i++) {
+      const flake = document.createElement('div');
+      flake.className = 'snowflake';
+      flake.textContent = flakes[Math.floor(Math.random() * flakes.length)];
+      flake.style.left = Math.random() * 100 + '%';
+      flake.style.fontSize = (8 + Math.random() * 14) + 'px';
+      flake.style.animationDuration = (5 + Math.random() * 10) + 's';
+      flake.style.animationDelay = Math.random() * 10 + 's';
+      flake.style.opacity = 0.4 + Math.random() * 0.6;
+      container.appendChild(flake);
+    }
+  }
+
+  // Отрисовка задания
+  function renderTask() {
+    const task = tasks[currentTask];
+    const sequenceEl = document.getElementById('sequence');
+    const bankEl = document.getElementById('bank');
+    const taskTextEl = document.getElementById('taskText');
+
+    // Обновляем текст
+    taskTextEl.textContent = taskTexts[currentTask];
+
+    // Обновляем индикаторы
+    for (let i = 1; i <= 3; i++) {
+      const dot = document.getElementById('dot' + i);
+      dot.classList.remove('active', 'done');
+      if (i - 1 < currentTask) dot.classList.add('done');
+      else if (i - 1 === currentTask) dot.classList.add('active');
+    }
+
+    // Очищаем
+    sequenceEl.innerHTML = '';
+    bankEl.innerHTML = '';
+
+    // Создаем последовательность — все ячейки выглядят одинаково
+    task.sequence.forEach((num, idx) => {
+      if (idx > 0) {
+        const arrow = document.createElement('div');
+        arrow.className = 'arrow';
+        arrow.textContent = '→';
+        sequenceEl.appendChild(arrow);
+      }
+      const cell = document.createElement('div');
+      cell.className = 'number-cell';
+      cell.textContent = num;
+      cell.dataset.index = idx;
+      cell.dataset.value = num;
+      sequenceEl.appendChild(cell);
+    });
+
+    // Создаем банк ответов (перемешиваем)
+    const shuffled = [...task.bank].sort(() => Math.random() - 0.5);
+    shuffled.forEach(num => {
+      const item = document.createElement('div');
+      item.className = 'bank-number';
+      item.textContent = num;
+      item.dataset.value = num;
+      item.draggable = true;
+      setupDrag(item);
+      bankEl.appendChild(item);
+    });
+  }
+
+  // Настройка Drag and Drop
+  function setupDrag(el) {
+    let offsetX = 0, offsetY = 0;
+    let isDragging = false;
+    let originalParent = null;
+    let originalNextSibling = null;
+
+    function onStart(e) {
+      initAudio();
+      e.preventDefault();
+      const point = e.touches ? e.touches[0] : e;
+      const rect = el.getBoundingClientRect();
+      offsetX = point.clientX - rect.left;
+      offsetY = point.clientY - rect.top;
+      isDragging = true;
+
+      originalParent = el.parentNode;
+      originalNextSibling = el.nextSibling;
+
+      el.classList.add('dragging');
+      el.style.position = 'fixed';
+      el.style.left = rect.left + 'px';
+      el.style.top = rect.top + 'px';
+      el.style.width = rect.width + 'px';
+      el.style.height = rect.height + 'px';
+      el.style.margin = '0';
+      document.body.appendChild(el);
+
+      playSound('grab');
+    }
+
+    function onMove(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      const point = e.touches ? e.touches[0] : e;
+      el.style.left = (point.clientX - offsetX) + 'px';
+      el.style.top = (point.clientY - offsetY) + 'px';
+    }
+
+    function onEnd(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      el.classList.remove('dragging');
+
+      // Проверяем попадание в любую ячейку последовательности
+      const cells = document.querySelectorAll('.number-cell');
+      let hitCell = null;
+      const elRect = el.getBoundingClientRect();
+      const elCenterX = elRect.left + elRect.width / 2;
+      const elCenterY = elRect.top + elRect.height / 2;
+
+      cells.forEach(cell => {
+        const cellRect = cell.getBoundingClientRect();
+        if (elCenterX >= cellRect.left && elCenterX <= cellRect.right &&
+            elCenterY >= cellRect.top && elCenterY <= cellRect.bottom) {
+          hitCell = cell;
+        }
+      });
+
+      if (hitCell) {
+        const task = tasks[currentTask];
+        const cellIndex = parseInt(hitCell.dataset.index);
+        const draggedValue = parseInt(el.dataset.value);
+
+        // Проверяем: бросили на ячейку с ошибочным числом И перетащили правильное число
+        if (cellIndex === task.errorIndex && draggedValue === task.correct) {
+          // Правильный ответ
+          playSound('success');
+          hitCell.textContent = task.correct;
+          hitCell.dataset.value = task.correct;
+          hitCell.classList.add('success');
+
+          // Убираем перетаскиваемый элемент
+          el.remove();
+
+          // Подсвечиваем всю последовательность зеленым
+          setTimeout(() => {
+            document.querySelectorAll('.number-cell').forEach(c => {
+              if (!c.classList.contains('success')) c.classList.add('success');
+            });
+          }, 300);
+
+          // Показываем сообщение
+          showMessage(task.message);
+
+          // Показываем кнопку далее
+          setTimeout(() => {
+            document.getElementById('nextBtn').classList.add('show');
+          }, 1000);
+
+        } else {
+          // Неправильный ответ — возврат с тряской ячейки
+          playSound('error');
+          returnToBank(el);
+          hitCell.classList.add('shake');
+          setTimeout(() => hitCell.classList.remove('shake'), 500);
+        }
+      } else {
+        // Возврат в банк
+        returnToBank(el);
+      }
+    }
+
+    function returnToBank(element) {
+      element.style.position = '';
+      element.style.left = '';
+      element.style.top = '';
+      element.style.width = '';
+      element.style.height = '';
+      element.style.margin = '';
+      const bank = document.getElementById('bank');
+      if (originalParent === bank) {
+        if (originalNextSibling) {
+          bank.insertBefore(element, originalNextSibling);
+        } else {
+          bank.appendChild(element);
+        }
+      } else {
+        bank.appendChild(element);
+      }
+    }
+
+    // Mouse events
+    el.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+
+    // Touch events
+    el.addEventListener('touchstart', onStart, { passive: false });
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  }
+
+  function showMessage(text) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 2000);
+  }
+
+  // Кнопка "Далее"
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    document.getElementById('nextBtn').classList.remove('show');
+    currentTask++;
+    if (currentTask >= tasks.length) {
+      document.getElementById('finalScreen').classList.add('show');
+    } else {
+      renderTask();
+    }
+  });
+
+  function restartGame() {
+    currentTask = 0;
+    document.getElementById('finalScreen').classList.remove('show');
+    document.getElementById('nextBtn').classList.remove('show');
+    renderTask();
+  }
+
+  // Инициализация
+  createSnowflakes();
+  renderTask();
+
+  document.addEventListener('click', initAudio, { once: true });
+  document.addEventListener('touchstart', initAudio, { once: true });
+</script>
+
+</body>
+</html>
